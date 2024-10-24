@@ -1,0 +1,5 @@
+Flask
+pandas
+requests
+ratelimit
+psycopg2-binary
