@@ -9,7 +9,7 @@ Repository where the Data Engineer technical test was executed
 
 1. Clone the repository:
 ```
-git clone https://github.com/tu_usuario/tu_repositorio.git
+git clone https://github.com/daniersdan/test_api_postcodes.git
 cd tu_repositorio
 ```
 2. Install dependencies:
