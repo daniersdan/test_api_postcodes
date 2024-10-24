@@ -14,7 +14,6 @@ ONE_MINUTE = 1
 MAX_THREADS = 10
 
 
-# Conexión a PostgreSQL
 def get_db_connection():
     conn = psycopg2.connect(
         host="db",
@@ -63,28 +62,17 @@ def store_result_in_db(latitude, longitude, postal_code, error):
     conn.close()
 
 
-def process_row(row):
+def process_row(row, success_counter, error_counter):
     try:
         postal_code, error = get_postal_code(row["lat"], row["lon"])
         store_result_in_db(row["lat"], row["lon"], postal_code, error)
         if error:
-            return {
-                "latitude": row["lat"],
-                "longitude": row["lon"],
-                "error": error,
-            }
-        return {
-            "latitude": row["lat"],
-            "longitude": row["lon"],
-            "postal_code": "Data loaded into DB",
-        }
+            error_counter.append(1)
+        else:
+            success_counter.append(1)
     except Exception as e:
         store_result_in_db(row["lat"], row["lon"], None, str(e))
-        return {
-            "latitude": row["lat"],
-            "longitude": row["lon"],
-            "error": str(e),
-        }
+        error_counter.append(1)
 
 
 @app.route("/upload", methods=["POST"])
@@ -109,20 +97,21 @@ def upload_file():
         if "lat" not in df.columns or "lon" not in df.columns:
             return jsonify({"error": "Missing latitude or longitude columns"}), 400
 
-        results = []
-        errors = []
+        success_counter = []
+        error_counter = []
 
         with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(process_row, row) for _, row in df.iterrows()]
+            futures = [executor.submit(process_row, row, success_counter, error_counter) for _, row in df.iterrows()]
 
             for future in as_completed(futures):
-                result = future.result()
-                if "error" in result:
-                    errors.append(result)
-                else:
-                    results.append(result)
+                future.result()
 
-        response = {"results": {"success": len(results), "errors": len(errors)}}
+        response = {
+            "results": {
+                "success": len(success_counter),
+                "errors": len(error_counter)
+            }
+        }
 
         return jsonify(response)
 
