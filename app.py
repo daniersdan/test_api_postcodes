@@ -29,18 +29,17 @@ def get_db_connection():
 @limits(calls=API_LIMIT, period=ONE_MINUTE)
 def get_postal_code(lat, lon):
     url = f"https://api.postcodes.io/postcodes?lon={lon}&lat={lat}"
-    headersList = {
-        "Accept": "*/*"}
+    headersList = {"Accept": "*/*"}
     payload = ""
-    response = requests.request("GET", url, data=payload,  headers=headersList)
+    response = requests.request("GET", url, data=payload, headers=headersList)
     data = json.loads(response.text)
 
-    if 'error' in data:
+    if "error" in data:
         return None, f"Error: {data['error']['message']}"
 
     if data["result"] is None:
         load_data = None
-        return load_data, 'Not find data for this coordinates'
+        return load_data, "Not find data for this coordinates"
     elif len(data["result"]) > 0 and data["result"][0] is not None:
         load_data = data["result"][0]
         load_data = json.dumps(load_data)
@@ -95,11 +94,18 @@ def upload_file():
 
     file = request.files["file"]
     try:
+
         def remove_quotes(val):
             return val.strip("'")
-        df = pd.read_csv(file,
-                         sep='|', decimal=',', quotechar="'", converters={'lat': remove_quotes, 'lon': remove_quotes})
-        df = df.replace(',', '.', regex=True)
+
+        df = pd.read_csv(
+            file,
+            sep="|",
+            decimal=",",
+            quotechar="'",
+            converters={"lat": remove_quotes, "lon": remove_quotes},
+        )
+        df = df.replace(",", ".", regex=True)
         if "lat" not in df.columns or "lon" not in df.columns:
             return jsonify({"error": "Missing latitude or longitude columns"}), 400
 
@@ -116,12 +122,7 @@ def upload_file():
                 else:
                     results.append(result)
 
-        response = {
-            "results": {
-                "success": len(results),
-                "errors": len(errors)
-                }
-                }
+        response = {"results": {"success": len(results), "errors": len(errors)}}
 
         return jsonify(response)
 
