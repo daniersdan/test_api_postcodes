@@ -3,4 +3,4 @@ pandas
 requests
 ratelimit
 psycopg2-binary
-unittest
+pytest
